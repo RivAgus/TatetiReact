@@ -35,7 +35,7 @@ function Layout(){
         </div>
         </nav>
         <div className="container">
-           <Outlet />    
+            <Outlet />    
         </div>
         </>
     );

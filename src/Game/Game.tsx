@@ -4,7 +4,7 @@ function Game(){
 
     return(
         <div className="page-header pt-4">
-            <h1>Game</h1>
+            <h1>The Game</h1>
         </div>
     );
 }
