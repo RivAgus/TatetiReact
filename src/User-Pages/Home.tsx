@@ -3,7 +3,7 @@ import { arrayBuffer } from 'stream/consumers';
 import '../Components/css/bootstrap.css';
 import '../Components/css/game.css';
 import Board from '../Game/Board';
-
+import { ChevronBackOutline } from 'react-ionicons'
 
 function Home(){
     const [ifJoin, setIfJoin] = useState(false);
@@ -29,10 +29,33 @@ function Home(){
     const joinGame=(e: any) =>{
         e.preventDefault();
     }
+
+    const back = (e: any) =>{
+        e.preventDefault()
+        if(ifJoin){
+            setIfJoin(false)
+            setShowMenu(true)
+        }
+        if(ifCreate){
+            setIfCreate(false)
+            setShowMenu(true)
+        }
+    }
+
     return(
         <>
         <div className="page-header pt-4">
-            {showMenu && ifJoin && ifCreate &&
+            {(ifJoin || ifCreate) &&
+                <div className='d-flex align-baseline justify-content-start'>
+                    <ChevronBackOutline
+                    color={'#00000'} 
+                    title={"GoBack"}
+                    height="55px"
+                    width="40px"
+                    onClick={back}
+                    /> 
+                </div>}
+            {!showBoard &&
                 <h1>Welcome</h1>}
             {showMenu && !ifJoin && !ifCreate &&
             <>
@@ -55,6 +78,7 @@ function Home(){
             </div>
             </>}
             {ifCreate && 
+            <>
             <div className="d-flex justify-content-center pt-2">
             <div className="row  " />
                 <div className='card text-white bg-secondary col-lg-3 d-flex justify-content-center'>
@@ -76,8 +100,10 @@ function Home(){
                     </div>
                 </div>
             </div>
+            </>
             }
             {ifJoin && 
+            <>
             <div className="d-flex justify-content-center pt-2">
             <div className="row  " />
                 <div className='card text-white bg-warning col-lg-3 d-flex justify-content-center'>
@@ -107,6 +133,7 @@ function Home(){
                     </div>
                 </div>
             </div>
+            </>
             }
 
             { showBoard &&
