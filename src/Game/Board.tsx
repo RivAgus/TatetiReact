@@ -14,11 +14,9 @@ interface GameProps {
 
 export default function Board(props: undefined | GameProps){
 
-
     
     return(
         <>
-
             <div className="page-header pt-4">
                 <h1>TicTacToe</h1>
                 <div className="row">
@@ -41,18 +39,19 @@ export default function Board(props: undefined | GameProps){
             </div>
             <div className="container">
                 <div className="gridCard">
-                    {props?.board.map((value, index)=>(
-                        <Tile
-                            key={index}
-                            value={value}
-                            index={index}
-                            player= {props.player1 ? "X" : "O"}
-                        />
-                    ))}
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
+                    <div className="tile"></div>
                 </div>
             </div>
             <div className="mt-4">
-                <h6>Game status: </h6>
+                <h5>Game status: </h5>
             </div>
     
         </>
