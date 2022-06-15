@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Tile from "./Tile";
 import {Player} from './Player'
+import { PlayCircle } from "react-ionicons";
 
 interface GameProps {
     id: string;
@@ -45,7 +46,7 @@ export default function Board(props: undefined | GameProps){
                             key={index}
                             value={value}
                             index={index}
-                            handleClick={props?.handleClick}
+                            player= {props.player1 ? "X" : "O"}
                         />
                     ))}
                 </div>
