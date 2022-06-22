@@ -2,6 +2,7 @@ import React from "react";
 
 
 export interface Player {
-    id: string;
+    id: number;
     name: string;
+    token: string;
 } 
