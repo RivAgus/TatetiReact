@@ -46,11 +46,16 @@ function Home(){
     }
     //To create a new player
     const postPlayer = async(name: string) =>{
+        var payload={"name":name}
+        var player= new FormData();
+        player.append("player",JSON.stringify(payload))
+        //ver si no es mejor con axios
         const response = await fetch(`http://localhost:3000/players`,{
             method: 'POST',
-            credentials: 'include',
+            mode: 'no-cors',
+            credentials: 'omit',
             headers: {'Content-type': 'application/json'},
-            body: JSON.stringify({name})
+            body: player
         })
         const data = await response.json()
         if(response.status === 200){
@@ -71,7 +76,8 @@ function Home(){
             setShowMenu(false);
         const response = await fetch(`http://localhost:3000/games`,{
             method: 'POST',
-            credentials: 'include',
+            mode: 'no-cors',
+            credentials: 'omit',
             headers: {'Authorization': `Bearear ${player.token}`,
                 'Content-type': 'application/json'},
             body: JSON.stringify({player1_id: player.id})
@@ -115,7 +121,8 @@ function Home(){
         //Try to join the game
         const response = await fetch(`http://localhost:3000/games/${gameID}/join`,{
             method: 'PUT',
-            credentials: 'include',
+            mode: 'no-cors',
+            credentials: 'omit',
             headers: { 'Authorization': `Bearear ${player.token}`,
                 'Content-type': 'application/json'},
             body: JSON.stringify({id: gameID, player2_id: player.id})

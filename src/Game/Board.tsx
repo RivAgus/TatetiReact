@@ -60,7 +60,7 @@ export default function Board(props: {game: Game | undefined}){
     const getGame = async(player: Player) => {
         const response = await fetch(`http://localhost:3000/games/${game.id}`,{
             method: 'GET',
-            credentials: 'include',
+            credentials: 'omit',
             headers:{
                 'Authorization': `Bearear ${player.token}`,
                 'Content-type': 'application/json'
@@ -87,7 +87,7 @@ export default function Board(props: {game: Game | undefined}){
     const getPlayerName = async(id: number) =>{
         const response = await fetch(`http://localhost:3000/players/${id}/name`,{
             method: 'GET',
-            credentials: 'include',
+            credentials: 'omit',
             headers:{'Content-type': 'application/json'},
         })
         const data = await response.json()
@@ -167,10 +167,10 @@ export default function Board(props: {game: Game | undefined}){
     const winnerFunc = async() => {
         const response = await fetch(`http://localhost:3000/games/${game.id}`,{
             method: 'PUT',
-            credentials: 'include',
+            credentials: 'omit',
             headers:{
                 'Authorization': `Bearear ${player!.token}`,
-                'Content-type': 'application/json'
+                'Content-type': 'application/json',
             },
             body: JSON.stringify({
                 winner: winner
@@ -194,7 +194,7 @@ export default function Board(props: {game: Game | undefined}){
     const setPlay = async(i:any)=>{
         const response = await fetch(`http://localhost:3000/games/${game.id}`,{
             method: 'PUT',
-            credentials: 'include',
+            credentials: 'omit',
             headers:{
                 'Authorization': `Bearear ${player!.token}`,
                 'Content-type': 'application/json'
@@ -212,7 +212,7 @@ export default function Board(props: {game: Game | undefined}){
     const checkPlayerTurn = async(check: NodeJS.Timer) => {
         const response = await fetch(`http://localhost:3000/games/${game.id}`,{
             method: 'GET',
-            credentials: 'include',
+            credentials: 'omit',
             headers:{
                 'Authorization': `Bearear ${player!.token}`,
                 'Content-type': 'application/json'
@@ -229,6 +229,7 @@ export default function Board(props: {game: Game | undefined}){
                     setWinner(data.winner)
                     setIfWinner(true)
                 }
+                setGame(data)
 
             }
         }
