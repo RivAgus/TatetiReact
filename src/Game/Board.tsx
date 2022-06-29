@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {Player} from './Player'
 import { Game } from "../User-Pages/Home";
+import axios from "axios";
 
 
 export default function Board(props: {game: Game | undefined}){
@@ -58,52 +59,39 @@ export default function Board(props: {game: Game | undefined}){
 
     //GetGame - to check the game
     const getGame = async(player: Player) => {
-        const response = await fetch(`http://localhost:3000/games/${game.id}`,{
-            method: 'GET',
-            credentials: 'omit',
-            headers:{
-                'Authorization': `Bearear ${player.token}`,
-                'Content-type': 'application/json'
-            },
-        })
-        const data = await response.json()
-        if(response.status === 200){
-            let foundGame : Game = {
-                id: data.game.id,
-                player1_id: data.game.player1_id,
-                player2_id: data.game.player2_id,
-                game_state: data.game.game_state,
-                is_turn: data.game.game_state,
-                player1: game.player1,
-                player2: game.player2
+        axios.get(`http://localhost:3000/games/${game.id}`,{headers: {'Authorization': `Bearear ${player.token}`}}).then(response=> {
+            if(response){
+                let foundGame : Game = {
+                    id: response.data.game.id,
+                    player1_id: response.data.game.player1_id,
+                    player2_id: response.data.game.player2_id,
+                    game_state: response.data.game.game_state,
+                    is_turn: response.data.game.game_state,
+                    player1: game.player1,
+                    player2: game.player2
+                }
+                setGame(foundGame)
             }
-            setGame(foundGame)
-        }
-        else{
-            console.log("An error occurred" + response.statusText)
-        }
+        }).catch((response)=>{
+            console.log(response.data.message)
+        })
     }
+
     //To get the players name
     const getPlayerName = async(id: number) =>{
-        const response = await fetch(`http://localhost:3000/players/${id}/name`,{
-            method: 'GET',
-            credentials: 'omit',
-            headers:{'Content-type': 'application/json'},
-        })
-        const data = await response.json()
-        if(response.status === 200){
-            if(player1 === undefined){
-                setPlayer1Name(data.player)
-                setPlayer2Name(game.player2!.name)
+        axios.get(`http://localhost:3000/players/${id}/name`).then(response=>{
+            if(response){
+                if(player1 === undefined){
+                    setPlayer1Name(response.data.player)
+                    setPlayer2Name(game.player2!.name)
+                }
+                else if(player2 === undefined){
+                    setPlayer1Name(game.player1!.name)
+                    setPlayer2Name(response.data.player)
+                }
             }
-            else if(player2 === undefined){
-                setPlayer1Name(game.player1!.name)
-                setPlayer2Name(data.player)
-            }
-        }
-        else{
-            console.log("An error occurred" + response.statusText)
-        }
+        }).catch(response=>{console.log(response.data.message)})
+
     }
 
 
@@ -165,77 +153,46 @@ export default function Board(props: {game: Game | undefined}){
     },[winner])
 
     const winnerFunc = async() => {
-        const response = await fetch(`http://localhost:3000/games/${game.id}`,{
-            method: 'PUT',
-            credentials: 'omit',
-            headers:{
-                'Authorization': `Bearear ${player!.token}`,
-                'Content-type': 'application/json',
-            },
-            body: JSON.stringify({
-                winner: winner
-            })
-        })
-        const data = await response.json()
-        if(response.status === 200){
-            let gameFinal : Game = {
-                id: data.game.id,
-                player1_id: data.game.player1_id,
-                player2_id: data.game.player2_id,
-                game_state: data.game.game_state,
-                is_turn: data.game.game_state,
-                player1: game.player1,
-                player2: game.player2
+        axios.put(`http://localhost:3000/games/${game.id}`,{winner:winner},{headers:{'Authorization': `Bearear ${player!.token}`}})
+        .then((response)=>{
+            if(response){
+                let gameFinal : Game = {
+                    id: response.data.game.id,
+                    player1_id: response.data.game.player1_id,
+                    player2_id: response.data.game.player2_id,
+                    game_state: response.data.game.game_state,
+                    is_turn: response.data.game.game_state,
+                    player1: game.player1,
+                    player2: game.player2
+                }
+                setGame(gameFinal)
             }
-            setGame(gameFinal)
-        }
+        }).catch(response => console.log(response.data.message))
     }
 
     const setPlay = async(i:any)=>{
-        const response = await fetch(`http://localhost:3000/games/${game.id}`,{
-            method: 'PUT',
-            credentials: 'omit',
-            headers:{
-                'Authorization': `Bearear ${player!.token}`,
-                'Content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                played: i
-            })
-        })
-        const data = await response.json()
-        if(response.status === 200){
-
-        }
+        axios.put(`http://localhost:3000/games/${game.id}`,{played: i},{headers:{'Authorization': `Bearear ${player!.token}`}})
+       .then(response => {setGame(response.data.game)}).catch(response=>{console.log(response.data.message)})
     }
 
     const checkPlayerTurn = async(check: NodeJS.Timer) => {
-        const response = await fetch(`http://localhost:3000/games/${game.id}`,{
-            method: 'GET',
-            credentials: 'omit',
-            headers:{
-                'Authorization': `Bearear ${player!.token}`,
-                'Content-type': 'application/json'
-            },
-        })
-        const data = await response.json()
-        if(response.status === 200){
-            if(data.is_turn === turn){
-                let board = data.board
+        axios.get(`http://localhost:3000/games/${game.id}`,{headers:{ 'Authorization': `Bearear ${player!.token}`}})
+        .then(response=>{
+            if(response){
+                if(response.data.is_turn == turn){
+                    let board = response.data.game.board
                 setTiles(board.map((t : any)=> t === undefined ? null : t))
                 clearInterval(checkTurn)
 
-                if(data.winner){
-                    setWinner(data.winner)
+                if(response.data.game.winner){
+                    setWinner(response.data.game.winner)
                     setIfWinner(true)
                 }
-                setGame(data)
-
+                setGame(response.data.game)
+                }
             }
-        }
-        else{
-            console.log("An error occurred" + response.statusText)
-        }
+        }).catch(error=>console.log(error.data.message))
+
     }
 
     return(
@@ -264,17 +221,17 @@ export default function Board(props: {game: Game | undefined}){
             <div className="container">
                 <div className="gridCard">
                     {/* First row */}
-                    <div className="tile" onClick={()=>handleClick(0)}></div>
-                    <div className="tile" onClick={()=>handleClick(1)}></div>
-                    <div className="tile" onClick={()=>handleClick(2)}></div>
+                    <button className="tile" onClick={()=>handleClick(0)}></button>
+                    <button className="tile" onClick={()=>handleClick(1)}></button>
+                    <button className="tile" onClick={()=>handleClick(2)}></button>
                     {/* Second row */}
-                    <div className="tile" onClick={()=>handleClick(3)}></div>
-                    <div className="tile" onClick={()=>handleClick(4)}></div>
-                    <div className="tile" onClick={()=>handleClick(5)}></div>
+                    <button className="tile" onClick={()=>handleClick(3)}></button>
+                    <button className="tile" onClick={()=>handleClick(4)}></button>
+                    <button className="tile" onClick={()=>handleClick(5)}></button>
                     {/* Third row */}
-                    <div className="tile" onClick={()=>handleClick(6)}></div>
-                    <div className="tile" onClick={()=>handleClick(7)}></div>
-                    <div className="tile" onClick={()=>handleClick(8)}></div>
+                    <button className="tile" onClick={()=>handleClick(6)}></button>
+                    <button className="tile" onClick={()=>handleClick(7)}></button>
+                    <button className="tile" onClick={()=>handleClick(8)}></button>
                 </div>
             </div>
             <div className="mt-4">

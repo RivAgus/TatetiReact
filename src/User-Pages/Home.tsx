@@ -4,6 +4,8 @@ import '../Components/css/game.css';
 import Board from '../Game/Board';
 import {ChevronBackOutline} from 'react-ionicons'
 import {Player} from '../Game/Player'
+import axios from 'axios';
+
 
 export interface Game {
     id: number,
@@ -14,6 +16,7 @@ export interface Game {
     player1: Player | undefined,
     player2: Player | undefined
 } 
+let check: NodeJS.Timer;
 function Home(){
     //Menus
     const [ifJoin, setIfJoin] = useState(false);
@@ -29,11 +32,13 @@ function Home(){
     const [game, setGame] = useState<Game>();
     
     //Create player
-    const [playerCreated, setPlayerCreated] = useState<Player | undefined>()
+    const [playerCreated, setPlayerCreated] = useState<Player>()
     
     //Join game
-    const [gameIDSearch, setGameIDSearch] = useState('');
+    const [gameIDSearch, setGameIDSearch] = useState<number>();
     
+
+
     //This function registers the player created
     const createJoinGame = (e:any) => {
         e.preventDefault();
@@ -46,121 +51,140 @@ function Home(){
     }
     //To create a new player
     const postPlayer = async(name: string) =>{
-        var payload={"name":name}
-        var player= new FormData();
-        player.append("player",JSON.stringify(payload))
-        //ver si no es mejor con axios
-        const response = await fetch(`http://localhost:3000/players`,{
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: {'Content-type': 'application/json'},
-            body: player
-        })
-        const data = await response.json()
-        if(response.status === 200){
+        const res = (await axios.post(`http://localhost:3000/players`,{
+            name: name
+        }))
+
+        if(res){
             let newPlayer: Player ={
-                id: data.player.id,
-                name: data.player.name,
-                token: data.player.token
+                id: res.data.player.id,
+                name:res.data.player.name,
+                token: res.data.player.token
             }
             setPlayerCreated(newPlayer)
+            console.log("stop")
+            debugger
         }
-        else{
-            console.log("An error occurred: " + response.statusText)
-        }
+
     }
+
+useEffect(()=>{
+    console.log("player: "+playerCreated)
+},[playerCreated])
+
     //Creates a new game
     const postGame = async(player: Player) =>{
+        debugger
         //To change menus
-            setShowMenu(false);
-        const response = await fetch(`http://localhost:3000/games`,{
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: {'Authorization': `Bearear ${player.token}`,
-                'Content-type': 'application/json'},
-            body: JSON.stringify({player1_id: player.id})
-        });
-        const data = await response.json();
-        if(response.status === 200){
-            let gameCreated : Game = {
-                id: data.game.id,
-                player1_id: data.game.player1_id,
-                player2_id: data.game.player2_id,
-                game_state: data.game.game_state,
-                is_turn: data.game.game_state,
-                player1: player,
-                player2: undefined
+        setShowMenu(false);
+        //post
+        axios.post(`http://localhost:3000/games`,{player1_id: player.id},{headers: {"Authorization": `Bearer ${player.token}`}}).then((response:any)=>{
+            if(response){
+                let gameCreated : Game = {
+                    id: response.data.game.id,
+                    player1_id: response.data.game.player1_id,
+                    player2_id: response.data.game.player2_id,
+                    game_state: response.data.game.game_state,
+                    is_turn: response.data.game.game_state,
+                    player1: player,
+                    player2: undefined
+                }
+                setGame(gameCreated)
+                setIfCreate(false)
+                setIfWaiting(true)
             }
-            
-            setGame(gameCreated)
-            setIfCreate(false)
-            setIfWaiting(true)
-        }
-        else{
-            console.log("An error occurred: " + response.statusText)
-        }
+        }).catch((response)=>{
+            console.log(response.data.message);
+        })
+       
     }
 
     useEffect(()=>{
-        if(playerCreated !== undefined){
+        if(playerCreated){
+            console.log("Player en created para post o join: "+playerCreated)
             if(ifCreate){
                 postGame(playerCreated)
             }
             else{
-                joinGame(gameIDSearch, playerCreated)
+                joinGame(gameIDSearch!, playerCreated)
             }
         }
     },[playerCreated])
 
-    const joinGame= async(gameID: string, player: Player) =>{
+    const joinGame= async(gameID: number, player: Player) =>{
         //To change menus
         setIfCreate(false)
         setShowMenu(false);
         //Try to join the game
-        const response = await fetch(`http://localhost:3000/games/${gameID}/join`,{
-            method: 'PUT',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { 'Authorization': `Bearear ${player.token}`,
-                'Content-type': 'application/json'},
-            body: JSON.stringify({id: gameID, player2_id: player.id})
-        });
-        const data = await response.json();
-        if(response.status === 200){
-            let gameJoined : Game = {
-                id: data.game.id,
-                player1_id: data.game.player1_id,
-                player2_id: data.game.player2_id,
-                game_state: data.game.game_state,
-                is_turn: data.game.game_state,
-                player1: undefined,
-                player2: player
+        axios.put(`http://localhost:3000/games/${gameID}/join`,{id: gameID, player2_id: player.id},{headers: {"Authorization": `Bearer ${player.token}`}}).then((response:any)=>{
+            if(response){
+                let gameJoined  : Game = {
+                    id: response.data.game.id,
+                    player1_id: response.data.game.player1_id,
+                    player2_id: response.data.game.player2_id,
+                    game_state: response.data.game.game_state,
+                    is_turn: response.data.game.game_state,
+                    player1: undefined,
+                    player2: player
+                }
+                setGame(gameJoined )
+                setIfJoin(false)
+                setIfWaiting(true)
+
             }
-            setGame(gameJoined)
-        }
-        else{
-            console.log("An error occurred: " + response.statusText)
-        }
-        
+        }).catch((response)=>{
+            console.log(response.data.message);
+        })
+
+}
+
+
+const checkGameCanStart = () => {
+    debugger
+    if(game?.player1 !== undefined){
+        getGame(game!.player1)
     }
+    if(game?.player2 !== undefined){
+        getGame(game!.player2)
+    }
+    
+    if (game && game.player1_id && game.player2_id) {
+        debugger
+        setIfWaiting(false)
+        setShowBoard(true)
+        clearTimeout(check)
+    }
+}
+
+useEffect(()=>{
+    checkGameCanStart()
+},[game])
 
     useEffect(() => {
-        let check = setInterval(
-            () => checkGameCanStart(),
-            1000
-        );
+        check = setTimeout(()=>{
+            checkGameCanStart()},1000
+        )
 
-        const checkGameCanStart = () => {
-            if (game && game.player1_id && game.player2_id) {
-                setIfWaiting(false)
-                setShowBoard(true)
-                clearInterval(check)
-            }
-        }
+        
     })
-
+    const getGame = async(player: Player) => {
+        axios.get(`http://localhost:3000/games/${game!.id}`,{headers: {'Authorization': `Bearear ${player.token}`}}).then(response=> {
+            if(response){
+                let foundGame : Game = {
+                    id: response.data.game.id,
+                    player1_id: response.data.game.player1_id,
+                    player2_id: response.data.game.player2_id,
+                    game_state: response.data.game.game_state,
+                    is_turn: response.data.game.game_state,
+                    player1: game!.player1,
+                    player2: game!.player2
+                }
+                setGame(foundGame)
+            }
+        }).catch((response)=>{
+            console.log(response.data.message)
+        })
+    }
     //To go back in the menu
     const back = (e: any) =>{
         e.preventDefault()
@@ -216,8 +240,10 @@ function Home(){
                             <h4>New game</h4>
                         </div>
                         <div className="card-body mx-auto ">
-                            <h5>Waiting for other player...</h5>
+                            <h5>Waiting ...</h5>
                             <br />
+                            <label className='col-form-label'>Game code</label>
+                            <input className="form-control" type="text" readOnly placeholder={(game!.id).toString()} />
                         </div>
                     </div>
                 </div>
@@ -267,9 +293,9 @@ function Home(){
                         <label className='col-form-label'>Game ID: </label>
                         <input 
                             className='form-control'
-                            type="text"
+                            type="number"
                             placeholder='Game ID given by your friend'
-                            onChange={e => setGameIDSearch(e.target.value)}
+                            onChange={e => setGameIDSearch(e.target.valueAsNumber)}
                             
                         />
                         <br />
