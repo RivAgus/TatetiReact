@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {Player} from './Player'
-import { Game } from "../User-Pages/Home";
+import {Game} from '../Game/Game'
 import axios from "axios";
 
 
 export default function Board(props: {game: Game | undefined}){
+    const boardTiles = [0,1,2,3,4,5,6,7,8]
     const winingCombos = [
         [0, 1, 2],
         [0, 3, 6],
@@ -17,36 +18,40 @@ export default function Board(props: {game: Game | undefined}){
     ]
     let checkTurn:NodeJS.Timer;
 
-    const [turn, setTurn] = useState<number>(props.game?.is_turn!);
+    const [turn, setTurn] = useState<number>();
     const [tiles, setTiles] = useState(new Array(9).fill(null));
-    const [player1, setPlayer1] = useState<Player | undefined>(props.game?.player1)
-    const [player2, setPlayer2] = useState<Player | undefined>(props.game?.player2)
-    const [move, setMove] = useState<number>(9)
+    const [player1] = useState<Player | undefined>(props.game!.player1)
+    const [player2] = useState<Player | undefined>(props.game!.player2)
+    const [move, setMove] = useState<number>(9);
 
-    const[ifWinner, setIfWinner]= useState(false)
-    const[winner, setWinner]=useState("")
-    
-    const[player, setPlayer] = useState<Player>();
+    const[ifWinner, setIfWinner]= useState(false);
+    const[winner, setWinner]=useState("");
 
     const[player1name, setPlayer1Name] = useState("");
-    const[player2name, setPlayer2Name]=useState("")
+    const[player2name, setPlayer2Name]=useState("");
 
     const [game, setGame] = useState<Game>(props.game!)
 
     //This UseEffect wil only be used once
     useEffect(()=>{
-        if(game && game.player1){
-            getGame(game.player1)
+        if(game && game.player1 !== undefined){
             getPlayerName(game.player2_id)
-            setPlayer(game.player1)
+            setTurn(1)
+            getGame(game.player1)
         }
-        else if(game && game.player2){
-            getGame(game.player2)
+        else if(game && game.player2 !== undefined){
             getPlayerName(game.player1_id)
-            setPlayer(game.player2)
+            // setPlayer(game.player2)
+            getGame(game.player2)
+            setTurn(2)
         }
     },[])
 
+    useEffect(()=>{
+        if(turn === 1){
+            setTimerTurn()
+        }
+    },[turn === 1])
 
     //To check turns
     const setTimerTurn = () => {
@@ -58,22 +63,24 @@ export default function Board(props: {game: Game | undefined}){
     }
 
     //GetGame - to check the game
+    //,{headers: {'Authorization': `Bearer ${player.token}`}}
     const getGame = async(player: Player) => {
-        axios.get(`http://localhost:3000/games/${game.id}`,{headers: {'Authorization': `Bearear ${player.token}`}}).then(response=> {
+        axios.get(`http://localhost:3000/games/${game!.id}`).then(response=> {
             if(response){
                 let foundGame : Game = {
                     id: response.data.game.id,
                     player1_id: response.data.game.player1_id,
                     player2_id: response.data.game.player2_id,
                     game_state: response.data.game.game_state,
-                    is_turn: response.data.game.game_state,
+                    is_turn: response.data.game.is_turn,
                     player1: game.player1,
                     player2: game.player2
                 }
+                
                 setGame(foundGame)
             }
         }).catch((response)=>{
-            console.log(response.data.message)
+            console.log(response)
         })
     }
 
@@ -90,7 +97,7 @@ export default function Board(props: {game: Game | undefined}){
                     setPlayer2Name(response.data.player)
                 }
             }
-        }).catch(response=>{console.log(response.data.message)})
+        }).catch(response=>{console.log(response)})
 
     }
 
@@ -120,16 +127,25 @@ export default function Board(props: {game: Game | undefined}){
         setPlay(i)
 
         if(wiinner === "O"){
+            alert("Winner is O")
             setWinner(wiinner)
+            setIfWinner(true)
             clearInterval(checkTurn)
             return
         }else if(wiinner === "X"){
+            alert("Winner is X")
             setWinner(wiinner)
+            setIfWinner(true)
             clearInterval(checkTurn)
             return
         } 
     }
 
+    useEffect(()=>{
+        if(winner !== ""){
+           console.log(winner) 
+        }
+    },[winner])
     const checkIfTie = () => {
         if (move === 0) {
             alert("It's a tie")
@@ -146,53 +162,48 @@ export default function Board(props: {game: Game | undefined}){
         }
     return null;
 }
-    useEffect(()=>{
-        if(winner !== undefined){
-        winnerFunc()
-        }
-    },[winner])
 
-    const winnerFunc = async() => {
-        axios.put(`http://localhost:3000/games/${game.id}`,{winner:winner},{headers:{'Authorization': `Bearear ${player!.token}`}})
-        .then((response)=>{
-            if(response){
-                let gameFinal : Game = {
-                    id: response.data.game.id,
-                    player1_id: response.data.game.player1_id,
-                    player2_id: response.data.game.player2_id,
-                    game_state: response.data.game.game_state,
-                    is_turn: response.data.game.game_state,
-                    player1: game.player1,
-                    player2: game.player2
-                }
-                setGame(gameFinal)
-            }
-        }).catch(response => console.log(response.data.message))
-    }
 
     const setPlay = async(i:any)=>{
-        axios.put(`http://localhost:3000/games/${game.id}`,{played: i},{headers:{'Authorization': `Bearear ${player!.token}`}})
-       .then(response => {setGame(response.data.game)}).catch(response=>{console.log(response.data.message)})
+        axios.put(`http://localhost:3000/games/${game.id}/${game.player1_id}/${game.player2_id}/${turn}`,{played: i,winner: winner})
+       .then(response => {setGame(response.data.game)
+        setTimerTurn()}).catch(response=>{console.log(response.request.statusText)})
     }
 
     const checkPlayerTurn = async(check: NodeJS.Timer) => {
-        axios.get(`http://localhost:3000/games/${game.id}`,{headers:{ 'Authorization': `Bearear ${player!.token}`}})
+        axios.get(`http://localhost:3000/games/${game.id}`)
         .then(response=>{
             if(response){
-                if(response.data.is_turn == turn){
-                    let board = response.data.game.board
-                setTiles(board.map((t : any)=> t === undefined ? null : t))
-                clearInterval(checkTurn)
-
+                if(response.data.game.is_turn === turn){
+                    let board = response.data.game.board.split("")
+                    setTiles(board.map((e:any)=> e === "A" ? null : e))
+                    clearInterval(checkTurn)
+                }
                 if(response.data.game.winner){
                     setWinner(response.data.game.winner)
                     setIfWinner(true)
                 }
                 setGame(response.data.game)
+                
                 }
-            }
-        }).catch(error=>console.log(error.data.message))
+            }).catch(error=>console.log(error.request.statusText))
 
+    }
+    function Tile(props: any){     
+        return(
+            <button className="tile" onClick={props.play}>
+                {props.value}
+            </button>
+        )
+    }
+
+    const renderTiles = (t: number) => {
+        return(
+            <Tile
+                value={tiles[t]}
+                play={()=>handleClick(t)}
+            />
+        )
     }
 
     return(
@@ -219,20 +230,12 @@ export default function Board(props: {game: Game | undefined}){
                 
             </div>
             <div className="container">
+                {!ifWinner &&
                 <div className="gridCard">
-                    {/* First row */}
-                    <button className="tile" onClick={()=>handleClick(0)}></button>
-                    <button className="tile" onClick={()=>handleClick(1)}></button>
-                    <button className="tile" onClick={()=>handleClick(2)}></button>
-                    {/* Second row */}
-                    <button className="tile" onClick={()=>handleClick(3)}></button>
-                    <button className="tile" onClick={()=>handleClick(4)}></button>
-                    <button className="tile" onClick={()=>handleClick(5)}></button>
-                    {/* Third row */}
-                    <button className="tile" onClick={()=>handleClick(6)}></button>
-                    <button className="tile" onClick={()=>handleClick(7)}></button>
-                    <button className="tile" onClick={()=>handleClick(8)}></button>
-                </div>
+                    {boardTiles.map((t)=>{
+                        return(renderTiles(t))
+                    })}
+                </div>}
             </div>
             <div className="mt-4">
                 <h5>Game status: {props.game?.game_state}</h5>

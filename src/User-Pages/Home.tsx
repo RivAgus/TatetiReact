@@ -5,18 +5,11 @@ import Board from '../Game/Board';
 import {ChevronBackOutline} from 'react-ionicons'
 import {Player} from '../Game/Player'
 import axios from 'axios';
+import {Game} from '../Game/Game'
 
 
-export interface Game {
-    id: number,
-    game_state: string,
-    is_turn: number,
-    player1_id: number,
-    player2_id: number,
-    player1: Player | undefined,
-    player2: Player | undefined
-} 
 let check: NodeJS.Timer;
+
 function Home(){
     //Menus
     const [ifJoin, setIfJoin] = useState(false);
@@ -28,7 +21,6 @@ function Home(){
     const [player1, setPlayer1] = useState("");
     const [player2, setPlayer2] = useState("");
     //Create game
-    const [gameID, setGameID] = useState("");
     const [game, setGame] = useState<Game>();
     
     //Create player
@@ -62,19 +54,16 @@ function Home(){
                 token: res.data.player.token
             }
             setPlayerCreated(newPlayer)
-            console.log("stop")
-            debugger
         }
 
     }
 
-useEffect(()=>{
-    console.log("player: "+playerCreated)
-},[playerCreated])
+// useEffect(()=>{
+//     console.log("player: "+playerCreated)
+// },[playerCreated])
 
     //Creates a new game
     const postGame = async(player: Player) =>{
-        debugger
         //To change menus
         setShowMenu(false);
         //post
@@ -85,7 +74,7 @@ useEffect(()=>{
                     player1_id: response.data.game.player1_id,
                     player2_id: response.data.game.player2_id,
                     game_state: response.data.game.game_state,
-                    is_turn: response.data.game.game_state,
+                    is_turn: response.data.game.is_turn,
                     player1: player,
                     player2: undefined
                 }
@@ -94,7 +83,7 @@ useEffect(()=>{
                 setIfWaiting(true)
             }
         }).catch((response)=>{
-            console.log(response.data.message);
+            console.log(response.request.statusText);
         })
        
     }
@@ -123,66 +112,67 @@ useEffect(()=>{
                     player1_id: response.data.game.player1_id,
                     player2_id: response.data.game.player2_id,
                     game_state: response.data.game.game_state,
-                    is_turn: response.data.game.game_state,
+                    is_turn: response.data.game.is_turn,
                     player1: undefined,
                     player2: player
                 }
                 setGame(gameJoined )
                 setIfJoin(false)
-                setIfWaiting(true)
+                setShowBoard(true)
 
             }
         }).catch((response)=>{
-            console.log(response.data.message);
+            console.log(response.request.statusText);
         })
 
 }
 
 
 const checkGameCanStart = () => {
-    debugger
-    if(game?.player1 !== undefined){
+    if(game!.player1 !== undefined){
         getGame(game!.player1)
     }
-    if(game?.player2 !== undefined){
+    if(game!.player2 !== undefined){
         getGame(game!.player2)
     }
     
-    if (game && game.player1_id && game.player2_id) {
-        debugger
-        setIfWaiting(false)
-        setShowBoard(true)
-        clearTimeout(check)
-    }
 }
 
-useEffect(()=>{
-    checkGameCanStart()
-},[game])
 
-    useEffect(() => {
-        check = setTimeout(()=>{
-            checkGameCanStart()},1000
-        )
 
+useEffect(() => {
+    if(ifWaiting){
+        checkGame()
+    }
         
-    })
+},[ifWaiting])
+
+
+const checkGame = () => {
+    check = setInterval(()=>{
+            checkGameCanStart()},5000
+    )
+}
+
     const getGame = async(player: Player) => {
-        axios.get(`http://localhost:3000/games/${game!.id}`,{headers: {'Authorization': `Bearear ${player.token}`}}).then(response=> {
-            if(response){
+        axios.get(`http://localhost:3000/games/${game!.id}/${player.id}`,{headers: {'Authorization': `Bearer ${player.token}`}}).then(response=> {
+            if(response.data.game.player1_id && response.data.game.player2_id){
                 let foundGame : Game = {
                     id: response.data.game.id,
                     player1_id: response.data.game.player1_id,
                     player2_id: response.data.game.player2_id,
                     game_state: response.data.game.game_state,
-                    is_turn: response.data.game.game_state,
+                    is_turn: response.data.game.is_turn,
                     player1: game!.player1,
                     player2: game!.player2
                 }
                 setGame(foundGame)
+                setIfWaiting(false)
+                setShowBoard(true)
+                clearInterval(check)
             }
         }).catch((response)=>{
-            console.log(response.data.message)
+            console.log(response.request.statusText)
         })
     }
     //To go back in the menu
